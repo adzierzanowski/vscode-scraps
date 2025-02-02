@@ -1,0 +1,163 @@
+{
+  "name": "scraps",
+  "displayName": "scraps",
+  "publisher": "doublefloat",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "doublefloat.scraps.add",
+        "title": "Add",
+        "category": "Scraps",
+        "icon": "$(add)"
+      },
+      {
+        "command": "doublefloat.scraps.edit",
+        "title": "Edit",
+        "category": "Scraps",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "doublefloat.scraps.load",
+        "title": "Load",
+        "category": "Scraps",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "doublefloat.scraps.save",
+        "title": "Save",
+        "category": "Scraps",
+        "icon": "$(save-all)"
+      },
+      {
+        "command": "doublefloat.scraps.refresh",
+        "title": "Refresh",
+        "category": "Scraps",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "doublefloat.scraps.remove",
+        "title": "Remove",
+        "category": "Scraps",
+        "icon": "$(remove-close)"
+      },
+      {
+        "command": "doublefloat.scraps.copy",
+        "title": "Copy",
+        "category": "Scraps",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "doublefloat.scraps.paste",
+        "title": "Paste",
+        "category": "Scraps",
+        "icon": "$(paste)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "contextualTitle": "Scraps",
+          "icon": "$(notebook)",
+          "id": "doublefloat.scraps.view",
+          "name": "Scraps",
+          "type": "tree"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "doublefloat.scraps.add",
+          "group": "navigation@1",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.refresh",
+          "group": "navigation@2",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.load",
+          "group": "navigation@3",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.save",
+          "group": "navigation@4",
+          "when": "view == doublefloat.scraps.view"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "doublefloat.scraps.remove",
+          "group": "inline@2",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.edit",
+          "group": "inline@1",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.copy",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.paste",
+          "when": "view == doublefloat.scraps.view"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Scraps",
+      "properties": {
+        "doublefloat.scraps.path": {
+          "title": "Scraps File Path",
+          "description": "Path to a file containing scraps data",
+          "type": "string",
+          "default": "${workspaceFolder}/scraps.json"
+        },
+        "doublefloat.scraps.saveOnChange": {
+          "title": "Save on Change",
+          "description": "Save scraps to file on tree change",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.16.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^3.0.1"
+  }
+}
