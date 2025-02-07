@@ -1,8 +1,8 @@
-import { TreeItem, TreeItemCollapsibleState, Uri } from 'vscode'
-import { Scrap, ScrapKind, ScrapKindMeta, ScrapState } from '../Scrap'
+import {TreeItem, TreeItemCollapsibleState} from 'vscode'
+import {Scrap, ScrapState} from '../Scrap'
 
 export interface GroupScrapState extends ScrapState {
-  collapsed: true
+  collapsed: boolean
 }
 
 export class GroupScrap extends Scrap<GroupScrapState> {
@@ -13,7 +13,7 @@ export class GroupScrap extends Scrap<GroupScrapState> {
       collapsibleState: this.state.collapsed
         ? TreeItemCollapsibleState.Collapsed
         : TreeItemCollapsibleState.Expanded,
-      label: this.state.name ?? 'Untitled Group'
+      label: this.state.name ?? 'Untitled Group',
     })
   }
 }

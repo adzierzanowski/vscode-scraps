@@ -1,11 +1,9 @@
-import { randomUUID, UUID } from 'crypto'
-import { OutgoingMessage } from 'http'
-import { isContext } from 'vm'
-import { ThemeIcon, TreeItem } from 'vscode'
-import { Output } from '../extension'
+import {randomUUID, UUID} from 'crypto'
+import {ThemeIcon, TreeItem} from 'vscode'
+import {Output} from '../extension'
 
 export interface ScrapState {
-  name?: string,
+  name?: string
   description?: string
 }
 
@@ -13,41 +11,46 @@ export const ScrapKindMeta = {
   File: {
     icon: ThemeIcon.File,
     acceptsChildren: false,
-    description: ''
+    description: '',
   },
   Group: {
     icon: new ThemeIcon('archive'),
     acceptsChildren: true,
-    description: 'Container for any Scrap'
+    description: 'Container for any Scrap',
   },
   Link: {
     icon: new ThemeIcon('link'),
     acceptsChildren: false,
-    description: 'Website Link'
+    description: 'Website Link',
   },
   Note: {
     icon: new ThemeIcon('markdown'),
     acceptsChildren: true,
-    description: 'Markdown Note'
+    description: 'Markdown Note',
   },
   Shell: {
     icon: new ThemeIcon('terminal'),
     acceptsChildren: false,
-    description: 'Shell Command'
+    description: 'Shell Command',
   },
   Todo: {
     icon: new ThemeIcon('checklist'),
     acceptsChildren: true,
-    description: 'Todo Item'
+    description: 'Todo Item',
   },
   VSCommand: {
     icon: new ThemeIcon('vscode'),
     acceptsChildren: false,
-    description: 'VSCode Command'
+    description: 'VSCode Command',
   },
 } as const
 
 export type ScrapKind = keyof typeof ScrapKindMeta
+
+export type ScrapDTO<T extends ScrapState> = {
+  [key in keyof (ScrapState &
+    T & {kind: ScrapKind; id: UUID; parentId?: UUID})]: string | undefined
+}
 
 export abstract class Scrap<T extends ScrapState> {
   abstract readonly kind: ScrapKind
@@ -63,13 +66,14 @@ export abstract class Scrap<T extends ScrapState> {
       iconPath: ScrapKindMeta[this.kind].icon,
       id: this.id,
       label: this.state.name ?? `Untitled ${this.kind}`,
-      ...overrides
+      ...overrides,
     }
   }
 
   get parent() {
     return this._parent
   }
+
   set parent(parent: Scrap<any> | undefined) {
     Output.debug(`Setting parent of ${this.toString()} to ${parent}`)
     this._parent = parent
@@ -81,7 +85,7 @@ export abstract class Scrap<T extends ScrapState> {
   }
 
   toString() {
-    return `[${this.kind}:${this.state.name??this.id}]`
+    return `[${this.kind}:${this.state.name ?? this.id}]`
   }
 
   get acceptsChildren(): boolean {
@@ -97,5 +101,23 @@ export abstract class Scrap<T extends ScrapState> {
       }
     }
     return true
+  }
+
+  get dto(): ScrapDTO<T> {
+    const _dto = {
+      id: this.id,
+      parentId: this.parent?.id,
+      kind: this.kind,
+      ...this.state,
+    }
+
+    return Object.fromEntries(
+      Object.entries(_dto).map(([k, v]) => [
+        k,
+        v instanceof Array
+          ? v.map(x => x?.toString()).join(',')
+          : v?.toString(),
+      ]),
+    ) as ScrapDTO<T>
   }
 }

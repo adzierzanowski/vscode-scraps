@@ -1,6 +1,5 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri } from 'vscode'
-import { Scrap, ScrapKind, ScrapState } from '../Scrap'
-import { UUID } from 'crypto'
+import {TreeItem, TreeItemCollapsibleState, Uri} from 'vscode'
+import {Scrap, ScrapState} from '../Scrap'
 
 export interface FileScrapState extends ScrapState {
   uri: Uri

@@ -1,5 +1,5 @@
-import { TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState } from 'vscode'
-import { Scrap, ScrapKind, ScrapKindMeta, ScrapState } from '../Scrap'
+import {TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState} from 'vscode'
+import {Scrap, ScrapState} from '../Scrap'
 
 export interface TodoScrapState extends ScrapState {
   checked: boolean
@@ -18,7 +18,7 @@ export class TodoScrap extends Scrap<TodoScrapState> {
       collapsibleState: this.state.collapsed
         ? TreeItemCollapsibleState.Collapsed
         : TreeItemCollapsibleState.Expanded,
-      iconPath: undefined
+      iconPath: undefined,
     })
   }
 }

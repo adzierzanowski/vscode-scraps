@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="./vscode.css">
+  <style>
+    #content {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #debug {
+      background-color: var(--vscode-input-background);
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre;
+      margin-top: 50px;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    form>summary {
+      padding: 10px 20px;
+    }
+
+    form>fieldset {
+      display: flex;
+      background-color: var(--vscode-input-background);
+      padding: 0;
+      border: 1px solid var(--vscode-input-border);
+      padding-top: 4px;
+      gap: 10px;
+    }
+
+    form>fieldset>input,
+    form>fieldset>textarea {
+      flex-grow: 1;
+      background-color: inherit;
+      color: inherit;
+      border: none;
+      padding: 8px 10px;
+    }
+
+    form>fieldset>legend {
+      padding: 0 10px;
+      color: var(--vscode-input-placeholderForeground);
+      letter-spacing: 0.75px;
+    }
+
+    #controls {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 10px 0;
+    }
+
+    button {
+      border: var(--vscode-button-border);
+      background-color: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      flex-grow: 1;
+      padding: 10px;
+      cursor: pointer;
+      flex-direction: row-reverse;
+    }
+
+    button:hover {
+      filter: brightness(0.8);
+    }
+
+    #discard-btn {
+      background-color: var(--vscode-statusBarItem-offlineBackground) !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content">

@@ -1,20 +1,26 @@
-import { ExtensionContext, LogOutputChannel, window, workspace } from 'vscode'
-import { ScrapExtension } from './ScrapExtension'
-
+import {
+  ExtensionContext,
+  LogOutputChannel,
+  Uri,
+  window,
+  workspace,
+} from 'vscode'
+import {ScrapExtension} from './ScrapExtension'
 
 export let Output: LogOutputChannel
+export let extensionUri: Uri
 
 export function activate(context: ExtensionContext) {
-	Output = window.createOutputChannel('Scraps', { log: true })
+  Output = window.createOutputChannel('Scraps', {log: true})
+  extensionUri = context.extensionUri
 
-	context.subscriptions.push(
-		new ScrapExtension(context)
-	)
+  context.subscriptions.push(new ScrapExtension(context))
 
-	// workspace.onDidChangeConfiguration(e => {
-	// })
+  // workspace.onDidChangeConfiguration(e => {
+  // })
+  //
 }
 
 export function deactivate() {
-	Output.dispose()
+  Output.dispose()
 }

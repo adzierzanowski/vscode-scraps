@@ -1,6 +1,5 @@
-import { TreeItem, Uri } from 'vscode'
-import { Scrap, ScrapKind, ScrapKindMeta, ScrapState } from '../Scrap'
-import { UUID } from 'crypto'
+import {TreeItem, Uri} from 'vscode'
+import {Scrap, ScrapState} from '../Scrap'
 
 export interface LinkScrapState extends ScrapState {
   uri: Uri
@@ -18,7 +17,7 @@ export class LinkScrap extends Scrap<LinkScrapState> {
       },
       description: this.state.description,
       label: this.state.name ?? this.state.uri.authority,
-      resourceUri: this.state.uri
+      resourceUri: this.state.uri,
     })
   }
 }

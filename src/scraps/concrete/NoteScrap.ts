@@ -1,9 +1,9 @@
-import { TreeItem, Uri } from 'vscode'
-import { Scrap, ScrapKind, ScrapKindMeta, ScrapState } from '../Scrap'
-import { UUID } from 'crypto'
+import {TreeItem, TreeItemCollapsibleState} from 'vscode'
+import {Scrap, ScrapState} from '../Scrap'
 
 export interface NoteScrapState extends ScrapState {
   content: string
+  collapsed: boolean
 }
 
 export class NoteScrap extends Scrap<NoteScrapState> {
@@ -12,6 +12,9 @@ export class NoteScrap extends Scrap<NoteScrapState> {
   get treeItem(): TreeItem {
     return this._treeItemWith({
       label: this.state.name ?? 'Untitled Note',
+      collapsibleState: this.state.collapsed
+        ? TreeItemCollapsibleState.Collapsed
+        : TreeItemCollapsibleState.Expanded,
     })
   }
 }
