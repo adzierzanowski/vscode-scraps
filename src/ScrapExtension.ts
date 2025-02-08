@@ -13,7 +13,7 @@ import {
   workspace,
   WorkspaceConfiguration,
 } from 'vscode'
-import {Scrap, ScrapFactory, ScrapRepository} from './scraps'
+import {NoteScrap, Scrap, ScrapFactory, ScrapRepository} from './scraps'
 import {Output} from './extension'
 import {extensionId} from './utils'
 import {
@@ -47,11 +47,18 @@ export class ScrapExtension implements Disposable {
       commands.registerCommand(extensionId('copy'), this.copy, this),
       commands.registerCommand(extensionId('paste'), this.paste, this),
       commands.registerCommand(extensionId('rename'), this.rename, this),
+      commands.registerCommand(extensionId('showNote'), this.showNote, this),
+      commands.registerCommand(
+        extensionId('addCurrentLineAsScrap'),
+        this.addCurrentLineAsScrap,
+        this,
+      ),
       commands.registerCommand(
         extensionId('runShellCommand'),
         this.runShellCommand,
         this,
       ),
+      workspace.registerTextDocumentContentProvider('scrap', this.repository),
     )
 
     this.repository.onDidChangeTreeData(
@@ -188,6 +195,24 @@ export class ScrapExtension implements Disposable {
       : 'Yes'
     if (doRemove === 'Yes') {
       this.repository.remove(scrapsToRemove)
+    }
+  }
+
+  async showNote(note: NoteScrap) {
+    Output.info(`showing ${note}`)
+    await commands.executeCommand(
+      'markdown.showPreview',
+      Uri.from({scheme: 'scrap', path: note.id}),
+    )
+  }
+
+  async addCurrentLineAsScrap() {
+    let uri = window.activeTextEditor?.document.uri
+
+    if (uri !== undefined) {
+      const fragment = `L${window.activeTextEditor?.selection.start.line}`
+      uri = Uri.from({scheme: uri.scheme, path: uri.path, fragment})
+      this.repository.addOrUpdate(ScrapFactory.fromUri(uri))
     }
   }
 }

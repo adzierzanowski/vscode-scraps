@@ -1,6 +1,6 @@
 {
   "name": "scraps",
-  "displayName": "scraps",
+  "displayName": "scrapbook",
   "publisher": "doublefloat",
   "icon": "assets/icon.png",
   "author": {
@@ -87,6 +87,18 @@
         "title": "Rename",
         "category": "Scraps",
         "icon": "$(symbol-parameter)"
+      },
+      {
+        "command": "doublefloat.scraps.showNote",
+        "title": "Show Note",
+        "category": "Scraps",
+        "icon": "$(note)"
+      },
+      {
+        "command": "doublefloat.scraps.addCurrentLineAsScrap",
+        "title": "Add Current Line as Scrap",
+        "icon": "$(debug-line-by-line)",
+        "category": "Scraps"
       }
     ],
     "views": {
@@ -148,6 +160,17 @@
         }
       ]
     },
+    "customEditors": [
+      {
+        "viewType": "doublefloat.scraps.noteView",
+        "displayName": "Note",
+        "selector": [
+          {
+            "filenamePattern": ""
+          }
+        ]
+      }
+    ],
     "configuration": {
       "title": "Scraps",
       "properties": {

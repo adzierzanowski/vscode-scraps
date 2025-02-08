@@ -1,5 +1,5 @@
 import {randomUUID, UUID} from 'crypto'
-import {ThemeIcon, TreeItem} from 'vscode'
+import {ThemeIcon, TreeItem, Uri} from 'vscode'
 import {Output} from '../extension'
 
 export interface ScrapState {
@@ -119,5 +119,12 @@ export abstract class Scrap<T extends ScrapState> {
           : v?.toString(),
       ]),
     ) as ScrapDTO<T>
+  }
+
+  get uri(): Uri {
+    return Uri.from({
+      scheme: 'scrap',
+      path: this.id,
+    })
   }
 }

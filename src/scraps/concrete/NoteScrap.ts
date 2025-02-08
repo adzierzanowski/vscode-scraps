@@ -1,5 +1,6 @@
 import {TreeItem, TreeItemCollapsibleState} from 'vscode'
 import {Scrap, ScrapState} from '../Scrap'
+import {extensionId} from '../../utils'
 
 export interface NoteScrapState extends ScrapState {
   content: string
@@ -15,6 +16,11 @@ export class NoteScrap extends Scrap<NoteScrapState> {
       collapsibleState: this.state.collapsed
         ? TreeItemCollapsibleState.Collapsed
         : TreeItemCollapsibleState.Expanded,
+      command: {
+        command: extensionId('showNote'),
+        title: 'Show Note Scrap',
+        arguments: [this],
+      },
     })
   }
 }

@@ -15,12 +15,14 @@ import {
   window,
   TreeItemCheckboxState,
   env,
+  TextDocumentContentProvider,
 } from 'vscode'
 import {Scrap, ScrapDTO} from './Scrap'
 import {Output} from '../extension'
 import {UUID} from 'crypto'
 import {ScrapFactory} from './ScrapFactory'
 import {extensionId} from '../utils'
+import {NoteScrap} from './concrete'
 
 export type ScrapEventArg = void | null | undefined | Scrap<any> | Scrap<any>[]
 
@@ -28,6 +30,7 @@ export class ScrapRepository
   implements
     TreeDragAndDropController<Scrap<any>>,
     TreeDataProvider<Scrap<any>>,
+    TextDocumentContentProvider,
     Disposable
 {
   private view: TreeView<Scrap<any>>
@@ -36,6 +39,8 @@ export class ScrapRepository
   readonly scrapMime = 'application/vnd.code.tree.doublefloat.scraps.view'
   private _onDidChangeTreeData: EventEmitter<ScrapEventArg> = new EventEmitter()
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event
+  private _onDidChange = new EventEmitter<Uri>()
+  readonly onDidChange = this._onDidChange.event
 
   readonly dropMimeTypes = [this.scrapMime, 'text/uri-list', 'files']
   readonly dragMimeTypes = [this.scrapMime]
@@ -57,6 +62,20 @@ export class ScrapRepository
     })
     this.disposables.push(this.view)
     this._subscribeToViewEvents()
+  }
+
+  provideTextDocumentContent(
+    uri: Uri,
+    token: CancellationToken,
+  ): ProviderResult<string> {
+    const scrapId = uri.path
+    const scrap = this.items.find(s => s.id === scrapId)
+
+    if (scrap instanceof NoteScrap) {
+      return scrap.state.content
+    }
+
+    return undefined
   }
 
   dispose() {
@@ -224,6 +243,9 @@ export class ScrapRepository
       if (dst !== undefined) {
         scrap.parent = dst ?? undefined
       }
+      if (scrap instanceof NoteScrap) {
+        this._onDidChange.fire(scrap.uri)
+      }
       this._onDidChangeTreeData.fire(scrap.parent)
     } else {
       this.items.push(scrap)
@@ -294,9 +316,16 @@ export class ScrapRepository
   async pasteFromClipboard(...args: Scrap<any>[]) {
     const clipboardContents = await env.clipboard.readText()
     Output.trace(`clipboard content: ${clipboardContents}`)
-    await this.addOrUpdate(
-      ScrapFactory.fromString(clipboardContents),
-      args?.[0],
-    )
+    const parsed = ScrapFactory.fromString(clipboardContents)
+    if (parsed instanceof Array) {
+      for (const s of parsed) {
+        await this.addOrUpdate(s, args?.[0])
+      }
+    } else {
+      await this.addOrUpdate(
+        ScrapFactory.fromString(clipboardContents) as Scrap<any>,
+        args?.[0],
+      )
+    }
   }
 }

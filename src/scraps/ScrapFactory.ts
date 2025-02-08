@@ -17,6 +17,7 @@ import {
   VSCommandScrapState,
 } from './concrete'
 import {UUID} from 'crypto'
+import {Output} from '../extension'
 
 export class ScrapFactory {
   static createDefault(kind: ScrapKind) {
@@ -147,6 +148,16 @@ export class ScrapFactory {
   static fromString(s: string) {
     if (/^\w+:/g.test(s)) {
       return ScrapFactory.fromUri(Uri.parse(s))
+    }
+
+    try {
+      const dto = JSON.parse(s)
+      Output.info(`json parsed: ${dto} ${dto instanceof Array}`)
+      if (dto instanceof Array) {
+        return dto.map(d => ScrapFactory.fromDTO(d))
+      }
+    } catch (err) {
+      Output.error(`${err}`)
     }
 
     return new NoteScrap({collapsed: false, content: s})

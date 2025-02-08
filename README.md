@@ -9,7 +9,7 @@ This extension adds a panel with different kind of items such as
 - todo items
 - markdown notes
 
-![Scraps Panel](assets/readme/panel.png)
+![Scraps Panel](./assets/readme/panel.png)
 
 ## Features
 
