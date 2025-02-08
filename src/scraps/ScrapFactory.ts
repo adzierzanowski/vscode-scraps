@@ -143,4 +143,12 @@ export class ScrapFactory {
         })
     }
   }
+
+  static fromString(s: string) {
+    if (/^\w+:/g.test(s)) {
+      return ScrapFactory.fromUri(Uri.parse(s))
+    }
+
+    return new NoteScrap({collapsed: false, content: s})
+  }
 }

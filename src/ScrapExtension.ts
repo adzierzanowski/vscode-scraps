@@ -4,12 +4,14 @@ import {
   env,
   ExtensionContext,
   ExtensionMode,
+  MessageItem,
   TreeItemCheckboxState,
   TreeView,
   Uri,
   ViewColumn,
   window,
   workspace,
+  WorkspaceConfiguration,
 } from 'vscode'
 import {Scrap, ScrapFactory, ScrapRepository} from './scraps'
 import {Output} from './extension'
@@ -37,11 +39,7 @@ export class ScrapExtension implements Disposable {
         this.repository.refresh,
         this.repository,
       ),
-      commands.registerCommand(
-        extensionId('remove'),
-        this.repository.remove,
-        this.repository,
-      ),
+      commands.registerCommand(extensionId('remove'), this.remove, this),
       commands.registerCommand(extensionId('add'), this.addScrap, this),
       commands.registerCommand(extensionId('edit'), this.edit, this),
       commands.registerCommand(extensionId('save'), this.save, this),
@@ -56,6 +54,16 @@ export class ScrapExtension implements Disposable {
       ),
     )
 
+    this.repository.onDidChangeTreeData(
+      async () => {
+        if (this.config.get<boolean>('saveOnChange')) {
+          await this.save()
+        }
+      },
+      this,
+      this._context.subscriptions,
+    )
+
     Output.info('Creating Scrap Extension')
     this.load()
   }
@@ -63,6 +71,24 @@ export class ScrapExtension implements Disposable {
   dispose() {
     Output.info('Disposing of Scrap Extension')
     this.repository.dispose()
+  }
+
+  get config(): WorkspaceConfiguration {
+    return workspace.getConfiguration(extensionId())
+  }
+
+  private async _getScrapsPath() {
+    const fsPath = this.config.get<string>('path')
+    if (fsPath) {
+      const path = Uri.file(
+        fsPath.replaceAll(
+          '${workspaceFolder}',
+          workspace.workspaceFolders?.[0].uri.fsPath ?? '',
+        ),
+      )
+      return path
+    }
+    return undefined
   }
 
   async addScrap() {
@@ -79,20 +105,6 @@ export class ScrapExtension implements Disposable {
     if (result !== undefined) {
       await this.repository.addOrUpdate(result)
     }
-  }
-
-  private async _getScrapsPath() {
-    const fsPath = workspace.getConfiguration(extensionId()).get<string>('path')
-    if (fsPath) {
-      const path = Uri.file(
-        fsPath.replaceAll(
-          '${workspaceFolder}',
-          workspace.workspaceFolders?.[0].uri.fsPath ?? '',
-        ),
-      )
-      return path
-    }
-    return undefined
   }
 
   async save() {
@@ -152,5 +164,30 @@ export class ScrapExtension implements Disposable {
 
     scrap.state.name = name
     await this.repository.addOrUpdate(scrap)
+  }
+
+  async remove(...scraps: Scrap<any>[]) {
+    const scrapsToRemove = scraps
+      .filter(s => s !== undefined)
+      .flatMap(s => [s, ...this.repository.getDescendants(s)])
+    const confirmSetting = this.config.get<string>('confirmRemoval')
+    const showConfirm =
+      confirmSetting === 'always' ||
+      (scrapsToRemove.length > 1 && confirmSetting === 'many')
+    const doRemove = showConfirm
+      ? (
+          await window.showWarningMessage<MessageItem>(
+            `Are you sure you want to remove ${scrapsToRemove.length} scrap${
+              scrapsToRemove.length > 1 ? 's' : ''
+            }?`,
+            {modal: true},
+            {title: 'Yes'},
+            {title: 'No', isCloseAffordance: true},
+          )
+        )?.title
+      : 'Yes'
+    if (doRemove === 'Yes') {
+      this.repository.remove(scrapsToRemove)
+    }
   }
 }

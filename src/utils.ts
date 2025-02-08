@@ -1,5 +1,7 @@
-import {Uri} from 'vscode'
+import {Disposable, Uri} from 'vscode'
 import {extensionUri} from './extension'
+
+export type Constructor = new (...args: unknown[]) => unknown
 
 export const extensionId = (...parts: string[]) => {
   return ['doublefloat', 'scraps', ...parts].join('.')

@@ -122,6 +122,7 @@ export class ScrapRepository
         for (const [scrap, checkState] of e.items) {
           scrap.state.checked =
             checkState === TreeItemCheckboxState.Checked ? true : false
+          this._onDidChangeTreeData.fire(scrap)
         }
       },
       this,
@@ -173,11 +174,24 @@ export class ScrapRepository
     this._onDidChangeTreeData.fire()
   }
 
-  remove(scrap: Scrap<any>) {
-    const initialLength = this.items.length
-    this.items = this.items.filter(s => !s.isDescendantOf(scrap) && s !== scrap)
-    Output.info(`Removed ${this.items.length - initialLength} item(s)`)
-    this._onDidChangeTreeData.fire(scrap.parent)
+  remove(scraps: Scrap<any>[]) {
+    Output.debug(`${scraps}`)
+    const parentsToNotify = new Set<Scrap<any>>()
+    let notifyRoot = false
+    for (const scrap of scraps) {
+      if (scrap.parent === undefined) {
+        notifyRoot = true
+        break
+      }
+      parentsToNotify.add(scrap.parent)
+    }
+    this.items = this.items.filter(s => !scraps.includes(s))
+    Output.info(`Removed ${scraps.length} item(s)`)
+    if (notifyRoot) {
+      this.refresh()
+    } else {
+      this._onDidChangeTreeData.fire(Array.from(parentsToNotify))
+    }
   }
 
   async move(dst: Scrap<any> | undefined, src: Scrap<any>) {
@@ -280,5 +294,9 @@ export class ScrapRepository
   async pasteFromClipboard(...args: Scrap<any>[]) {
     const clipboardContents = await env.clipboard.readText()
     Output.trace(`clipboard content: ${clipboardContents}`)
+    await this.addOrUpdate(
+      ScrapFactory.fromString(clipboardContents),
+      args?.[0],
+    )
   }
 }

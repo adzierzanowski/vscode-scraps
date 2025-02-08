@@ -15,10 +15,6 @@ export function activate(context: ExtensionContext) {
   extensionUri = context.extensionUri
 
   context.subscriptions.push(new ScrapExtension(context))
-
-  // workspace.onDidChangeConfiguration(e => {
-  // })
-  //
 }
 
 export function deactivate() {

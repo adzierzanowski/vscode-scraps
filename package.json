@@ -162,6 +162,27 @@
           "description": "Save scraps to file on tree change",
           "type": "boolean",
           "default": false
+        },
+        "doublefloat.scraps.confirmRemoval": {
+          "title": "Confirm Removal",
+          "description": "Ask Before Removing Scraps",
+          "type": "string",
+          "default": "many",
+          "enum": [
+            "never",
+            "many",
+            "always"
+          ],
+          "enumDescriptions": [
+            "Never ask before removing items",
+            "Ask only when removing more than one item",
+            "Always ask before removing items"
+          ],
+          "enumItemLabels": [
+            "Never Ask",
+            "Multiple Only",
+            "Always Ask"
+          ]
         }
       }
     },
