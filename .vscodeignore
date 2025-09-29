@@ -12,3 +12,7 @@ vsc-extension-quickstart.md
 !src/scraps/editors/**
 !assets/**
 node_modules/
+esbuild.js
+out/
+.nvmrc
+scraps.json

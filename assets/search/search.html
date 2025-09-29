@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    main {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 0;
+      font-family: sans-serif;
+    }
+
+    input,
+    button {
+      background-color: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border);
+
+      display: flex;
+      align-items: center;
+    }
+
+    #sorting-buttons {
+      display: flex;
+      flex-direction: row;
+    }
+
+
+    #options {
+      position: sticky;
+      top: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px;
+      background-color: var(--vscode-input-background);
+
+    }
+
+    #results {
+      padding: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: auto;
+    }
+
+    .scrap {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .scrap:hover {
+      background-color: var(--vscode-input-background);
+    }
+
+    .scrap__header {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .scrap__title {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .scrap__date {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .scrap__date>div {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+    }
+  </style>
+
+  <link rel="stylesheet" href="%codiconsCss%" />
+</head>
+
+<body>
+  <main>
+    <section id="options">
+
+      <input type="text" name="query" id="query">
+
+      <div id="sorting-buttons">
+        <button data-method="Default" title="Default sorting">
+          <i class="codicon codicon-graph-scatter"></i>
+        </button>
+        <button data-method="NameAsc" title="A-Z">
+          <i class="codicon codicon-symbol-text"></i>
+          <i class="codicon codicon-arrow-small-down"></i>
+        </button>
+        <button data-method="NameDesc" title="Z-A">
+          <i class="codicon codicon-symbol-text"></i>
+          <i class="codicon codicon-arrow-small-up"></i>
+        </button>
+        <button data-method="CreatedAtAsc" title="Oldest first">
+          <i class="codicon codicon-clock"></i>
+          <i class="codicon codicon-arrow-small-down"></i>
+        </button>
+        <button data-method="CreatedAtDesc" title="Newest first">
+          <i class="codicon codicon-clock"></i>
+          <i class="codicon codicon-arrow-small-up"></i>
+        </button>
+        <button data-method="ModifiedAtAsc" title="Recently edited last">
+          <i class="codicon codicon-pencil"></i>
+          <i class="codicon codicon-arrow-small-down"></i>
+        </button>
+        <button data-method="ModifiedAtDesc" title="Recently edited first">
+          <i class="codicon codicon-pencil"></i>
+          <i class="codicon codicon-arrow-small-up"></i>
+        </button>
+      </div>
+    </section>
+
+
+    <section id="results"></section>
+
+    <script>
+      const state = {
+        query: '',
+        sortingMethod: 'Default',
+      }
+      const vscode = acquireVsCodeApi()
+      const postState = () => {
+        vscode.postMessage({ kind: 'state', state })
+      }
+
+      const queryInput = document.getElementById('query')
+      queryInput.addEventListener('keyup', e => {
+        state.query = e.target.value
+        postState()
+      })
+
+      document.querySelectorAll('#sorting-buttons > button').forEach(el => el.addEventListener('click',
+        (e) => {
+          state.sortingMethod = el.getAttribute('data-method')
+          console.log(e.target)
+          postState()
+        }))
+
+      const results = document.getElementById('results')
+      window.addEventListener('message', msg => {
+        results.innerHTML = ''
+
+        for (const scrap of msg.data) {
+          results.innerHTML += scrap
+        }
+
+        document.querySelectorAll('.scrap').forEach(el => el.addEventListener('click', () => {
+          vscode.postMessage({ kind: 'click', id: el.id })
+        }))
+      })
+
+      window.addEventListener('DOMContentLoaded', () => {
+        queryInput.focus()
+
+      })
+    </script>
+  </main>
+</body>
+
+</html>

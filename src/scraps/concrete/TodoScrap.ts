@@ -1,7 +1,14 @@
-import {TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState} from 'vscode'
-import {Scrap, ScrapState} from '../Scrap'
+import {
+  QuickPickItem,
+  ThemeIcon,
+  TreeItem,
+  TreeItemCheckboxState,
+  TreeItemCollapsibleState,
+} from 'vscode'
+import {Scrap} from '../Scrap'
+import {ScrapStateBase} from '../types'
 
-export interface TodoScrapState extends ScrapState {
+export interface TodoScrapState extends ScrapStateBase {
   checked: boolean
   collapsed: boolean
   description?: string
@@ -19,6 +26,13 @@ export class TodoScrap extends Scrap<TodoScrapState> {
         ? TreeItemCollapsibleState.Collapsed
         : TreeItemCollapsibleState.Expanded,
       iconPath: undefined,
+    })
+  }
+
+  get qpItem() {
+    return this._qpItemWith({
+      label: this.state.name ?? 'Todo',
+      iconPath: new ThemeIcon(this.state.checked ? 'check' : 'x'),
     })
   }
 }

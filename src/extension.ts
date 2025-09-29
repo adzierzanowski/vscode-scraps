@@ -1,10 +1,4 @@
-import {
-  ExtensionContext,
-  LogOutputChannel,
-  Uri,
-  window,
-  workspace,
-} from 'vscode'
+import {ExtensionContext, LogOutputChannel, Uri, window} from 'vscode'
 import {ScrapExtension} from './ScrapExtension'
 
 export let Output: LogOutputChannel

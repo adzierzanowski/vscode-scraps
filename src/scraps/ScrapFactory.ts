@@ -1,5 +1,4 @@
-import {Uri, workspace} from 'vscode'
-import {Scrap, ScrapDTO, ScrapKind, ScrapState} from './Scrap'
+import {Uri} from 'vscode'
 import {
   FileScrap,
   FileScrapState,
@@ -18,6 +17,7 @@ import {
 } from './concrete'
 import {UUID} from 'crypto'
 import {Output} from '../extension'
+import {ScrapDTO, ScrapKind} from './types'
 
 export class ScrapFactory {
   static createDefault(kind: ScrapKind) {
@@ -35,11 +35,12 @@ export class ScrapFactory {
       case 'Todo':
         return new TodoScrap({checked: false, collapsed: true})
       case 'VSCommand':
-        return new VSCommandScrap({commandId: 'noop'})
+        return new VSCommandScrap({commandId: 'noop', args: ''})
     }
   }
 
-  static fromDTO<T extends ScrapState>(dto_: ScrapDTO<T>) {
+  static fromDTO<T extends {}>(dto_: ScrapDTO<T>) {
+    console.log('from DTO', dto_.kind)
     switch (dto_.kind as ScrapKind) {
       case 'File': {
         const dto = dto_ as ScrapDTO<FileScrapState>
@@ -48,6 +49,8 @@ export class ScrapFactory {
             uri: Uri.parse(dto?.uri ?? 'file://'),
             description: dto.description,
             name: dto.name,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -60,6 +63,9 @@ export class ScrapFactory {
             collapsed: dto.collapsed === 'true',
             description: dto.description,
             name: dto.name,
+            color: dto.color,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -69,9 +75,11 @@ export class ScrapFactory {
         const dto = dto_ as ScrapDTO<LinkScrapState>
         return new LinkScrap(
           {
-            uri: Uri.parse(dto?.uri ?? 'about:blank'),
+            uri: Uri.parse(dto?.uri ?? 'about:blank', false),
             description: dto.description,
             name: dto.name,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -85,6 +93,8 @@ export class ScrapFactory {
             content: dto?.content ?? '',
             description: dto.description,
             name: dto.name,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -97,6 +107,8 @@ export class ScrapFactory {
             command: dto?.command ?? 'false',
             description: dto.description,
             name: dto.name,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -110,6 +122,8 @@ export class ScrapFactory {
             collapsed: dto.collapsed === 'true',
             description: dto.description,
             name: dto.name,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -117,12 +131,24 @@ export class ScrapFactory {
 
       case 'VSCommand': {
         const dto = dto_ as ScrapDTO<VSCommandScrapState>
+        let args: any = dto.args
+
+        if (args !== undefined) {
+          try {
+            args = JSON.parse(args)
+          } catch {
+            args = args.split(',')
+          }
+        }
+
         return new VSCommandScrap(
           {
             commandId: dto.commandId ?? 'noop',
             description: dto.description,
             name: dto.name,
-            args: dto.args?.split(','),
+            args,
+            createdAt: dto.createdAt ? parseInt(dto.createdAt) : undefined,
+            modifiedAt: dto.modifiedAt ? parseInt(dto.modifiedAt) : undefined,
           },
           dto.id as UUID | undefined,
         )
@@ -152,9 +178,12 @@ export class ScrapFactory {
 
     try {
       const dto = JSON.parse(s)
-      Output.info(`json parsed: ${dto} ${dto instanceof Array}`)
+      console.log({dto})
       if (dto instanceof Array) {
-        return dto.map(d => ScrapFactory.fromDTO(d))
+        return dto.map(d => {
+          ;(d as ScrapDTO<any>).id = undefined
+          return ScrapFactory.fromDTO(d)
+        })
       }
     } catch (err) {
       Output.error(`${err}`)

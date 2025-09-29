@@ -1,5 +1,5 @@
 {
-  "name": "scraps",
+  "name": "scrapbook",
   "displayName": "scrapbook",
   "publisher": "doublefloat",
   "icon": "assets/icon.png",
@@ -21,7 +21,7 @@
     "url": "https://github.com/adzierzanowski/vscode-scraps.git"
   },
   "description": "A scrapbook for easy access to different items",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.96.0"
   },
@@ -89,6 +89,12 @@
         "icon": "$(symbol-parameter)"
       },
       {
+        "command": "doublefloat.scraps.setColor",
+        "title": "Set Color",
+        "category": "Scraps",
+        "icon": "$(symbol-color)"
+      },
+      {
         "command": "doublefloat.scraps.showNote",
         "title": "Show Note",
         "category": "Scraps",
@@ -99,6 +105,20 @@
         "title": "Add Current Line as Scrap",
         "icon": "$(debug-line-by-line)",
         "category": "Scraps"
+      },
+      {
+        "command": "doublefloat.scraps.setSortingMethod",
+        "title": "Set Sorting Method",
+        "shortTitle": "Sorting",
+        "category": "Scraps",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "doublefloat.scraps.showSearch",
+        "title": "Search for Scrap",
+        "shortTitle": "Search",
+        "category": "Scraps",
+        "icon": "$(search)"
       }
     ],
     "views": {
@@ -125,13 +145,21 @@
           "when": "view == doublefloat.scraps.view"
         },
         {
-          "command": "doublefloat.scraps.load",
+          "command": "doublefloat.scraps.save",
           "group": "navigation@3",
           "when": "view == doublefloat.scraps.view"
         },
         {
-          "command": "doublefloat.scraps.save",
+          "command": "doublefloat.scraps.setSortingMethod",
           "group": "navigation@4",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.load",
+          "when": "view == doublefloat.scraps.view"
+        },
+        {
+          "command": "doublefloat.scraps.showSearch",
           "when": "view == doublefloat.scraps.view"
         }
       ],
@@ -186,6 +214,38 @@
           "type": "boolean",
           "default": false
         },
+        "doublefloat.scraps.sortingMethod": {
+          "title": "Sort Scraps",
+          "type": "string",
+          "enum": [
+            "Manual",
+            "NameAsc",
+            "NameDesc",
+            "CreatedAtAsc",
+            "CreatedAtDesc",
+            "ModifiedAtAsc",
+            "ModifiedAtDesc"
+          ],
+          "enumDescriptions": [
+            "Dragging affects the order",
+            "Sort by name (ascending)",
+            "Sort by name (descending)",
+            "Sort by creation date (ascending)",
+            "Sort by creation date (descending)",
+            "Sort by modification date (ascending)",
+            "Sort by modification date (descending)"
+          ],
+          "enumItemLabels": [
+            "Manual",
+            "A-Z",
+            "Z-A",
+            "Creation Date",
+            "Creation Date (descending)",
+            "Modification Date",
+            "Modification Date (descending)"
+          ],
+          "default": "Manual"
+        },
         "doublefloat.scraps.confirmRemoval": {
           "title": "Confirm Removal",
           "description": "Ask Before Removing Scraps",
@@ -221,6 +281,84 @@
         "key": "ctrl+v",
         "mac": "cmd+v",
         "when": "focusedView == doublefloat.scraps.view"
+      },
+      {
+        "command": "doublefloat.scraps.remove",
+        "when": "focusedView == doublefloat.scraps.view",
+        "key": "delete",
+        "mac": "cmd+backspace"
+      },
+      {
+        "command": "doublefloat.scraps.showSearch",
+        "when": "focusedView == doublefloat.scraps.view",
+        "key": "ctrl+f",
+        "mac": "cmd+f"
+      }
+    ],
+    "colors": [
+      {
+        "id": "doublefloat.scraps.color.cyan",
+        "defaults": {
+          "dark": "terminal.ansiCyan",
+          "light": "terminal.ansiCyan"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.magenta",
+        "defaults": {
+          "dark": "terminal.ansiMagenta",
+          "light": "terminal.ansiMagenta"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.green",
+        "defaults": {
+          "dark": "terminal.ansiGreen",
+          "light": "terminal.ansiGreen"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.blue",
+        "defaults": {
+          "dark": "terminal.ansiBlue",
+          "light": "terminal.ansiBlue"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.red",
+        "defaults": {
+          "dark": "terminal.ansiRed",
+          "light": "terminal.ansiRed"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.white",
+        "defaults": {
+          "dark": "terminal.ansiWhite",
+          "light": "terminal.ansiWhite"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.yellow",
+        "defaults": {
+          "dark": "terminal.ansiYellow",
+          "light": "terminal.ansiYellow"
+        },
+        "description": "Scraps Colorcoding"
+      },
+      {
+        "id": "doublefloat.scraps.color.black",
+        "defaults": {
+          "dark": "terminal.ansiBlack",
+          "light": "terminal.ansiBlack"
+        },
+        "description": "Scraps Colorcoding"
       }
     ]
   },
@@ -245,8 +383,8 @@
     "@vscode/codicons": "^0.0.36",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
-    "@vscode/vsce": "^3.2.2",
-    "esbuild": "^0.24.2",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
     "eslint": "^9.16.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.7.2"

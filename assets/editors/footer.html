@@ -5,9 +5,7 @@
 
 </div>
 
-<div id="debug">
-
-</div>
+<div id="debug"></div>
 </body>
 
 <script>
@@ -16,16 +14,30 @@
   const form = document.getElementById('scrap')
 
   window.addEventListener('message', e => {
+    const title = document.getElementById('title')
     document.getElementById('debug').innerText = e.data
+
     const data = JSON.parse(e.data)
+    title.innerText = `Edit ${data.kind} Scrap`
 
     const formData = new FormData(form)
     for (const [k, v] of Object.entries(data)) {
       console.log({ k, inForm: formData.has(k) })
-      const input = form.querySelector(`*[name='${k}']`)
-      if (input) {
-        console.log(`Setting ${input} to ${v}`)
-        input.value = v
+
+      if (k === 'color') {
+        const inputs = form.querySelectorAll(`*[name='${k}']`)
+        inputs.forEach(input => {
+          if (input.value === v) {
+            input.setAttribute('checked', true)
+          }
+        })
+
+      } else {
+        const input = form.querySelector(`*[name='${k}']`)
+        if (input) {
+          console.log(`Setting ${input} to ${v}`)
+          input.value = v
+        }
       }
     }
     console.log(e)
@@ -43,6 +55,7 @@
     for (const [k, v] of formData.entries()) {
       payload[k] = v
     }
+    payload['modifiedAt'] = new Date().getTime()
     vscode.postMessage({
       action: 'save',
       payload

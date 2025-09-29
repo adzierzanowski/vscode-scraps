@@ -1,64 +1,24 @@
 import {randomUUID, UUID} from 'crypto'
-import {ThemeIcon, TreeItem, Uri} from 'vscode'
+import {QuickPickItem, TreeItem, Uri} from 'vscode'
 import {Output} from '../extension'
+import {dateFmt} from '../utils'
+import {
+  ScrapDTO,
+  ScrapKind,
+  ScrapKindMeta,
+  ScrapLike,
+  ScrapQpItem,
+  ScrapState,
+} from './types'
 
-export interface ScrapState {
-  name?: string
-  description?: string
-}
-
-export const ScrapKindMeta = {
-  File: {
-    icon: ThemeIcon.File,
-    acceptsChildren: false,
-    description: '',
-  },
-  Group: {
-    icon: new ThemeIcon('archive'),
-    acceptsChildren: true,
-    description: 'Container for any Scrap',
-  },
-  Link: {
-    icon: new ThemeIcon('link'),
-    acceptsChildren: false,
-    description: 'Website Link',
-  },
-  Note: {
-    icon: new ThemeIcon('markdown'),
-    acceptsChildren: true,
-    description: 'Markdown Note',
-  },
-  Shell: {
-    icon: new ThemeIcon('terminal'),
-    acceptsChildren: false,
-    description: 'Shell Command',
-  },
-  Todo: {
-    icon: new ThemeIcon('checklist'),
-    acceptsChildren: true,
-    description: 'Todo Item',
-  },
-  VSCommand: {
-    icon: new ThemeIcon('vscode'),
-    acceptsChildren: false,
-    description: 'VSCode Command',
-  },
-} as const
-
-export type ScrapKind = keyof typeof ScrapKindMeta
-
-export type ScrapDTO<T extends ScrapState> = {
-  [key in keyof (ScrapState &
-    T & {kind: ScrapKind; id: UUID; parentId?: UUID})]: string | undefined
-}
-
-export abstract class Scrap<T extends ScrapState> {
+export abstract class Scrap<T> {
   abstract readonly kind: ScrapKind
 
-  readonly id: UUID
-  protected _parent: Scrap<any> | undefined
-  state: T
+  private _id: UUID
+  protected _parent: ScrapLike | undefined
+  state: ScrapState<T>
   abstract get treeItem(): TreeItem
+  abstract get qpItem(): ScrapQpItem
   protected _treeItemWith(overrides: TreeItem): TreeItem {
     return {
       contextValue: this.kind,
@@ -70,18 +30,58 @@ export abstract class Scrap<T extends ScrapState> {
     }
   }
 
+  get id() {
+    return this._id
+  }
+
+  protected get _qpDescription() {
+    let desc = `created ${this.createdAtString} `
+
+    if (this.state.modifiedAt !== this.state.createdAt) {
+      desc += `$(dash) changed ${this.modifiedAtString} `
+    }
+
+    return desc
+  }
+
+  protected _qpItemWith(overrides: QuickPickItem): ScrapQpItem {
+    return {
+      id: this.id,
+      detail: this.state.description,
+      iconPath: ScrapKindMeta[this.kind].icon,
+      description: this._qpDescription,
+      ...overrides,
+    }
+  }
+
   get parent() {
     return this._parent
   }
 
-  set parent(parent: Scrap<any> | undefined) {
+  set parent(parent: ScrapLike | undefined) {
     Output.debug(`Setting parent of ${this.toString()} to ${parent}`)
     this._parent = parent
   }
 
-  constructor(state: T, id?: UUID) {
+  constructor(state: ScrapState<T>, id?: UUID) {
     this.state = state
-    this.id = id ?? randomUUID()
+    if (!this.state.createdAt) {
+      this.state.createdAt = new Date().getTime()
+    }
+    if (!this.state.modifiedAt) {
+      this.state.modifiedAt = this.state.createdAt
+    }
+    this._id = id ?? randomUUID()
+  }
+
+  rehash() {
+    this._id = randomUUID()
+  }
+
+  update(state: ScrapState<T>, id?: UUID) {
+    for (const [k, v] of Object.entries(state)) {
+      this.state[k as keyof ScrapState<T>] = v
+    }
   }
 
   toString() {
@@ -92,7 +92,7 @@ export abstract class Scrap<T extends ScrapState> {
     return ScrapKindMeta[this.kind].acceptsChildren
   }
 
-  isDescendantOf(scrap: Scrap<any>): boolean {
+  isDescendantOf(scrap: ScrapLike): boolean {
     let p = this.parent
     while (p !== scrap) {
       p = p?.parent
@@ -101,6 +101,22 @@ export abstract class Scrap<T extends ScrapState> {
       }
     }
     return true
+  }
+
+  get createdAtString() {
+    if (this.state.createdAt === undefined) {
+      return ''
+    }
+    const createdAt = new Date(this.state.createdAt)
+    return dateFmt(createdAt)
+  }
+
+  get modifiedAtString() {
+    if (this.state.modifiedAt === undefined) {
+      return ''
+    }
+    const modifiedAt = new Date(this.state.modifiedAt)
+    return dateFmt(modifiedAt)
   }
 
   get dto(): ScrapDTO<T> {
@@ -114,9 +130,7 @@ export abstract class Scrap<T extends ScrapState> {
     return Object.fromEntries(
       Object.entries(_dto).map(([k, v]) => [
         k,
-        v instanceof Array
-          ? v.map(x => x?.toString()).join(',')
-          : v?.toString(),
+        v instanceof Array ? JSON.stringify(v) : v?.toString(),
       ]),
     ) as ScrapDTO<T>
   }

@@ -1,35 +1,26 @@
-<h1>Edit VSCode Command Scrap</h1>
+<fieldset>
+  <legend>Name</legend>
+  <input type="text" name="name">
+</fieldset>
 
-<form id="scrap">
-  <summary>
-  </summary>
+<fieldset>
+  <legend>Description</legend>
+  <input type="text" name="description">
+</fieldset>
 
-  <input type="hidden" name="kind" value="Group">
-  <input type="hidden" name="id" value="">
-  <input type="hidden" name="parentId" value="">
+<fieldset>
+  <legend>Command</legend>
+  <input type="text" name="commandId">
+</fieldset>
 
-  <fieldset>
-    <legend>Name</legend>
-    <input type="text" name="name">
-  </fieldset>
-
-  <fieldset>
-    <legend>Description</legend>
-    <input type="text" name="description">
-  </fieldset>
-
-  <fieldset>
-    <legend>Command</legend>
-    <input type="text" name="commandId">
-  </fieldset>
-
-  <fieldset>
-    <legend>Arguments</legend>
-    <input type="text" id="args-input">
-    <button id="args-add">Add</button>
-    <input type="hidden" name="args" id="args">
-  </fieldset>
-  <div id="args-list"></div>
+<fieldset>
+  <legend>Arguments</legend>
+  <!-- <input type="text" id="args-input"> -->
+  <!-- <button id="args-add">Add</button> -->
+  <textarea name="args"></textarea>
+  <!-- <input type="hidden" name="args" id="args"> -->
+</fieldset>
+<div id="args-list"></div>
 </form>
 
 <style>
@@ -62,56 +53,56 @@
   const argsButton = document.getElementById('args-add')
   let args = []
 
-  const renderArgList = () => {
-    argsList.innerHTML = ''
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i]
-      const argDiv = document.createElement('div')
-      argDiv.classList.add('arg')
-      const argLabel = document.createElement('div')
-      argLabel.innerText = arg
-      argDiv.appendChild(argLabel)
-      const argRemoveBtn = document.createElement('button')
-      argRemoveBtn.innerText = '╳'
-      argRemoveBtn.addEventListener('click', e => removeArg(e, i))
-      argDiv.appendChild(argRemoveBtn)
-      argsList.appendChild(argDiv)
-    }
-  }
+  // const renderArgList = () => {
+  //   argsList.innerHTML = ''
+  //   for (let i = 0; i < args.length; i++) {
+  //     const arg = args[i]
+  //     const argDiv = document.createElement('div')
+  //     argDiv.classList.add('arg')
+  //     const argLabel = document.createElement('div')
+  //     argLabel.innerText = arg
+  //     argDiv.appendChild(argLabel)
+  //     const argRemoveBtn = document.createElement('button')
+  //     argRemoveBtn.innerText = '╳'
+  //     argRemoveBtn.addEventListener('click', e => removeArg(e, i))
+  //     argDiv.appendChild(argRemoveBtn)
+  //     argsList.appendChild(argDiv)
+  //   }
+  // }
 
-  const addArg = e => {
-    e.preventDefault()
-    args.push(argsInput.value)
-    argsInput.value = ''
-    updateArgs()
-  }
+  // const addArg = e => {
+  //   e.preventDefault()
+  //   args.push(argsInput.value)
+  //   argsInput.value = ''
+  //   updateArgs()
+  // }
 
-  const removeArg = (e, i) => {
-    e.preventDefault()
-    args.splice(i, 1)
-    updateArgs()
-  }
+  // const removeArg = (e, i) => {
+  //   e.preventDefault()
+  //   args.splice(i, 1)
+  //   updateArgs()
+  // }
 
-  argsInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      addArg(e)
-    }
-  })
+  // argsInput.addEventListener('keydown', e => {
+  //   if (e.key === 'Enter') {
+  //     addArg(e)
+  //   }
+  // })
 
-  argsButton.addEventListener('click', e => addArg(e))
+  // argsButton.addEventListener('click', e => addArg(e))
 
-  const updateArgs = () => {
-    argsHidden.value = args.join(',')
-    renderArgList()
-  }
+  // const updateArgs = () => {
+  //   argsHidden.value = args.join(',')
+  //   renderArgList()
+  // }
 
-  window.addEventListener('message', e => {
-    console.log('VSCOMMAND', e)
-    setTimeout(() => {
-      args = argsHidden.value.split(',')
-      renderArgList()
-    }, 0)
-  })
+  // window.addEventListener('message', e => {
+  //   console.log('VSCOMMAND', e)
+  //   setTimeout(() => {
+  //     args = argsHidden.value.split(',')
+  //     renderArgList()
+  //   }, 0)
+  // })
 
   // window.updateArgs = updateArgs
 

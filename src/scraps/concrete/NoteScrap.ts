@@ -1,8 +1,9 @@
-import {TreeItem, TreeItemCollapsibleState} from 'vscode'
-import {Scrap, ScrapState} from '../Scrap'
+import {QuickPickItem, TreeItem, TreeItemCollapsibleState} from 'vscode'
+import {Scrap} from '../Scrap'
 import {extensionId} from '../../utils'
+import {ScrapStateBase} from '../types'
 
-export interface NoteScrapState extends ScrapState {
+export interface NoteScrapState extends ScrapStateBase {
   content: string
   collapsed: boolean
 }
@@ -22,5 +23,9 @@ export class NoteScrap extends Scrap<NoteScrapState> {
         arguments: [this],
       },
     })
+  }
+
+  get qpItem() {
+    return this._qpItemWith({label: this.state.name ?? 'Untitled Note'})
   }
 }

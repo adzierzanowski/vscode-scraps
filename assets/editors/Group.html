@@ -1,21 +1,100 @@
-<h1>Edit Scrap Group</h1>
+<fieldset>
+  <legend>Name</legend>
+  <input type="text" name="name">
+</fieldset>
 
-<form id="scrap">
-  <summary>
-    A Group is a generic container for scraps.
-  </summary>
+<fieldset>
+  <legend>Description</legend>
+  <input type="text" name="description">
+</fieldset>
 
-  <input type="hidden" name="kind" value="Group">
-  <input type="hidden" name="id" value="">
-  <input type="hidden" name="parentId" value="">
-
-  <fieldset>
-    <legend>Name</legend>
-    <input type="text" name="name">
-  </fieldset>
-
-  <fieldset>
-    <legend>Description</legend>
-    <input type="text" name="description">
-  </fieldset>
+<fieldset class="color">
+  <legend>Color</legend>
+  <input type="radio" name="color" id="none" value="" style="margin-right: 20px;">
+  <input type="radio" name="color" id="red" value="red">
+  <input type="radio" name="color" id="green" value="green">
+  <input type="radio" name="color" id="blue" value="blue">
+  <input type="radio" name="color" id="cyan" value="cyan">
+  <input type="radio" name="color" id="magenta" value="magenta">
+  <input type="radio" name="color" id="yellow" value="yellow">
+  <input type="radio" name="color" id="black" value="black">
+  <input type="radio" name="color" id="white" value="white">
+</fieldset>
 </form>
+
+<style>
+  fieldset.color {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  input[name='color'] {
+    border: 1px solid;
+    appearance: none;
+    display: block;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    margin-bottom: 8px;
+    flex-grow: 0;
+    border-radius: 16px;
+    border-color: var(--color);
+    padding: 0;
+    cursor: pointer;
+    outline: none;
+  }
+
+  input[name='color']::after {
+    content: " ";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 10px;
+    top: 2px;
+    left: 2px;
+    background-color: #0000;
+  }
+
+  #none {
+    border-style: dashed;
+  }
+
+  #cyan {
+    --color: var(--vscode-doublefloat-scraps\.color\.cyan);
+  }
+
+  #green {
+    --color: var(--vscode-doublefloat-scraps\.color\.green);
+  }
+
+  #yellow {
+    --color: var(--vscode-doublefloat-scraps\.color\.yellow);
+  }
+
+  #black {
+    --color: var(--vscode-doublefloat-scraps\.color\.black)
+  }
+
+  #red {
+    --color: var(--vscode-doublefloat-scraps\.color\.red)
+  }
+
+  #white {
+    --color: var(--vscode-doublefloat-scraps\.color\.white)
+  }
+
+  #blue {
+    --color: var(--vscode-doublefloat-scraps\.color\.blue)
+  }
+
+  #magenta {
+    --color: var(--vscode-doublefloat-scraps\.color\.magenta)
+  }
+
+  input[name='color']:checked::after {
+    background-color: var(--color);
+  }
+</style>

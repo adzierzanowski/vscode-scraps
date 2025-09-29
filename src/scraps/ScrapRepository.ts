@@ -1,67 +1,75 @@
 import {
   CancellationToken,
   Disposable,
-  DataTransfer,
-  DataTransferItem,
-  Event,
   EventEmitter,
   ProviderResult,
-  TreeDataProvider,
-  TreeDragAndDropController,
-  TreeItem,
-  TreeItemCollapsibleState,
   Uri,
-  TreeView,
   window,
   TreeItemCheckboxState,
   env,
   TextDocumentContentProvider,
+  workspace,
+  TreeCheckboxChangeEvent,
+  TreeViewExpansionEvent,
+  ThemeColor,
+  Color,
+  ColorInformation,
+  ColorPresentation,
 } from 'vscode'
-import {Scrap, ScrapDTO} from './Scrap'
 import {Output} from '../extension'
 import {UUID} from 'crypto'
 import {ScrapFactory} from './ScrapFactory'
 import {extensionId} from '../utils'
 import {NoteScrap} from './concrete'
-
-export type ScrapEventArg = void | null | undefined | Scrap<any> | Scrap<any>[]
+import {
+  ScrapDTO,
+  ScrapKind,
+  ScrapKindMeta,
+  ScrapLike,
+  ScrapSorter,
+  ScrapSortingMethod,
+  ScrapSortingMethods,
+} from './types'
+import {Scrap} from './Scrap'
 
 export class ScrapRepository
-  implements
-    TreeDragAndDropController<Scrap<any>>,
-    TreeDataProvider<Scrap<any>>,
-    TextDocumentContentProvider,
-    Disposable
+  implements TextDocumentContentProvider, Disposable
 {
-  private view: TreeView<Scrap<any>>
-  private items: Scrap<any>[] = []
+  private _items: Scrap<any>[] = []
   private disposables: Disposable[] = []
-  readonly scrapMime = 'application/vnd.code.tree.doublefloat.scraps.view'
-  private _onDidChangeTreeData: EventEmitter<ScrapEventArg> = new EventEmitter()
-  readonly onDidChangeTreeData = this._onDidChangeTreeData.event
-  private _onDidChange = new EventEmitter<Uri>()
-  readonly onDidChange = this._onDidChange.event
 
-  readonly dropMimeTypes = [this.scrapMime, 'text/uri-list', 'files']
-  readonly dragMimeTypes = [this.scrapMime]
-  async handleDrag(
-    src: readonly Scrap<any>[],
-    dt: DataTransfer,
-    token: CancellationToken,
-  ) {
-    dt.set(this.scrapMime, new DataTransferItem(src.map(s => s.id)))
-  }
+  private _onDidChangeData = new EventEmitter<Scrap<any>[] | undefined>()
+  onDataChange = this._onDidChangeData.event
+  private affectedScraps: Set<Scrap<any> | undefined> = new Set()
 
   constructor() {
-    this.view = window.createTreeView(extensionId('view'), {
-      treeDataProvider: this,
-      canSelectMany: true,
-      dragAndDropController: this,
-      manageCheckboxStateManually: true,
-      showCollapseAll: true,
-    })
-    this.disposables.push(this.view)
-    this._subscribeToViewEvents()
+    // this._subscribeToViewEvents()
+    workspace.onDidChangeConfiguration(
+      e => {
+        if (e.affectsConfiguration(extensionId('sortingMethod'))) {
+          const methodName = workspace
+            .getConfiguration(extensionId())
+            .get('sortingMethod')
+          Output.debug('Sorting method changed to', methodName)
+          this.notifyDataChange(undefined)
+        }
+      },
+      this,
+      this.disposables,
+    )
+  }
+
+  get items(): Readonly<Scrap<any>[]> {
+    return [...this._items].sort(this.sortingMethod)
+  }
+
+  get sortingMethod(): undefined | ScrapSorter {
+    const sortingMethodName = workspace
+      .getConfiguration(extensionId())
+      .get('sortingMethod')
+    return sortingMethodName
+      ? ScrapSortingMethods[sortingMethodName as ScrapSortingMethod]
+      : undefined
   }
 
   provideTextDocumentContent(
@@ -69,7 +77,7 @@ export class ScrapRepository
     token: CancellationToken,
   ): ProviderResult<string> {
     const scrapId = uri.path
-    const scrap = this.items.find(s => s.id === scrapId)
+    const scrap = this._items.find(s => s.id === scrapId)
 
     if (scrap instanceof NoteScrap) {
       return scrap.state.content
@@ -83,134 +91,33 @@ export class ScrapRepository
       disposable.dispose()
     }
   }
-
-  getChildren(element?: Scrap<any> | undefined): ProviderResult<Scrap<any>[]> {
-    return this.items.filter(s => s.parent === element)
-  }
-
   getDescendants(element: Scrap<any>) {
-    return this.items.filter(s => s.isDescendantOf(element))
+    return this._items.filter(s => s.isDescendantOf(element))
   }
 
-  getTreeItem(element: Scrap<any>): TreeItem | Thenable<TreeItem> {
-    const treeItem = element.treeItem
-
-    if ('collapsibleState' in treeItem && !this._scrapHasChildren(element)) {
-      treeItem.collapsibleState = TreeItemCollapsibleState.None
-    }
-
-    return treeItem
-  }
-
-  getParent(element: Scrap<any>): ProviderResult<Scrap<any>> {
-    return element.parent
-  }
-
-  resolveTreeItem(
-    item: TreeItem,
-    element: Scrap<any>,
-    token: CancellationToken,
-  ): ProviderResult<TreeItem> {
-    return item
-  }
-
-  async handleDrop(
-    dst: Scrap<any> | undefined,
-    dt: DataTransfer,
-    token: CancellationToken,
-  ) {
-    const src = await this._parseDataTransferSrc(dt)
-
-    const scrapsToNotify: Set<Scrap<any> | undefined> = new Set([dst])
-    for (const scrap of src) {
-      scrapsToNotify.add(scrap.parent)
-      if (this.items.find(s => s === scrap)) {
-        await this.move(dst, scrap)
-      } else {
-        await this.addOrUpdate(scrap, dst)
-      }
-    }
-    for (const scrap of scrapsToNotify) {
-      this._onDidChangeTreeData.fire(scrap)
+  onDidChangeCheckboxState(e: TreeCheckboxChangeEvent<Scrap<any>>) {
+    for (const [scrap, checkState] of e.items) {
+      scrap.state.checked =
+        checkState === TreeItemCheckboxState.Checked ? true : false
+      scrap.state.modifiedAt = new Date().getTime()
+      this.notifyDataChange(e.items.map(x => x[0]))
     }
   }
 
-  private _subscribeToViewEvents() {
-    this.view.onDidChangeCheckboxState(
-      e => {
-        for (const [scrap, checkState] of e.items) {
-          scrap.state.checked =
-            checkState === TreeItemCheckboxState.Checked ? true : false
-          this._onDidChangeTreeData.fire(scrap)
-        }
-      },
-      this,
-      this.disposables,
-    )
-
-    this.view.onDidCollapseElement(
-      e => {
-        e.element.state.collapsed = true
-      },
-      this,
-      this.disposables,
-    )
-
-    this.view.onDidExpandElement(
-      e => {
-        e.element.state.collapsed = false
-      },
-      this,
-      this.disposables,
-    )
+  onCollapse(e: TreeViewExpansionEvent<Scrap<any>>) {
+    e.element.state.collapsed = true
+    this.notifyDataChange([e.element])
   }
 
-  private async _parseDataTransferSrc(dt: DataTransfer) {
-    for (const [mime, item] of dt) {
-      Output.debug(`drop mime: ${mime}`)
-    }
-
-    let srcDT = dt.get(this.scrapMime)
-    if (srcDT !== undefined) {
-      return (srcDT!.value as UUID[])
-        .map(id => this.items.find(s => s.id === id))
-        .filter(s => s !== undefined)
-    }
-
-    srcDT = dt.get('text/uri-list')
-    if (srcDT !== undefined) {
-      const dtValue = await srcDT.asString()
-      Output.info(`text/uri-list: ${dtValue}`)
-      return dtValue
-        .split('\r\n')
-        .map(uriString => ScrapFactory.fromUri(Uri.parse(uriString)))
-    }
-
-    return []
-  }
-
-  refresh() {
-    this._onDidChangeTreeData.fire()
+  onExpand(e: TreeViewExpansionEvent<Scrap<any>>) {
+    e.element.state.collapsed = false
+    this.notifyDataChange([e.element])
   }
 
   remove(scraps: Scrap<any>[]) {
-    Output.debug(`${scraps}`)
-    const parentsToNotify = new Set<Scrap<any>>()
-    let notifyRoot = false
-    for (const scrap of scraps) {
-      if (scrap.parent === undefined) {
-        notifyRoot = true
-        break
-      }
-      parentsToNotify.add(scrap.parent)
-    }
-    this.items = this.items.filter(s => !scraps.includes(s))
+    this._items = this._items.filter(s => !scraps.includes(s))
     Output.info(`Removed ${scraps.length} item(s)`)
-    if (notifyRoot) {
-      this.refresh()
-    } else {
-      this._onDidChangeTreeData.fire(Array.from(parentsToNotify))
-    }
+    this.notifyDataChange(undefined)
   }
 
   async move(dst: Scrap<any> | undefined, src: Scrap<any>) {
@@ -220,44 +127,24 @@ export class ScrapRepository
       return
     }
 
-    if (dst?.acceptsChildren ?? true) {
+    if (dst?.acceptsChildren || dst === undefined) {
       src.parent = dst
     } else {
       await this.move(dst?.parent, src)
     }
   }
 
-  /**
-   * Add `scrap` to the list if it doesn't exist or update existing one.
-   * @param scrap
-   * @param dst destination of the scrap:
-   * - tree root if `null`
-   * - unchanged if `undefined`
-   */
-  async addOrUpdate(scrap: Scrap<any>, dst?: Scrap<any> | null) {
-    const existing = this.items.findIndex(s => s.id === scrap.id)
-    Output.info(`addOrUpdate existing index: ${existing}`)
-
-    if (existing > -1) {
-      this.items[existing] = scrap
-      if (dst !== undefined) {
-        scrap.parent = dst ?? undefined
-      }
-      if (scrap instanceof NoteScrap) {
-        this._onDidChange.fire(scrap.uri)
-      }
-      this._onDidChangeTreeData.fire(scrap.parent)
-    } else {
-      this.items.push(scrap)
-      if (dst !== undefined) {
-        scrap.parent = dst ?? undefined
-      }
-      this.refresh()
+  async rename(scrap: ScrapLike, name: string) {
+    if (scrap.state.name === name) {
+      return
     }
+
+    scrap.state.name = name
+    this.notifyDataChange([scrap])
   }
 
   serialize() {
-    return this.items.map(item => item.dto)
+    return this._items.map(item => item.dto)
   }
 
   async deserialize(dtos: ScrapDTO<any>[]) {
@@ -278,28 +165,13 @@ export class ScrapRepository
       }
     }
 
-    // XXX:
-    // Clear Tree so that collapsible state is preserved when reloading items
-    // with the same ID
-    // this.items = []
-    // this.refresh()
-    // await new Promise(resolve => setTimeout(resolve, 0))
-
-    this.items = items
-    this.refresh()
+    this._items = items
+    this.notifyDataChange(undefined)
   }
 
-  private _scrapHasChildren(scrap: Scrap<any>) {
-    return this.items.find(s => s.parent?.id === scrap.id) !== undefined
-  }
-
-  async copyToClipboard(...args: Scrap<any>[]) {
-    const sources = args.length > 0 ? args : this.view.selection
-
-    Output.trace(`copy sources: ${sources}`)
-
+  async copyToClipboard(scraps: readonly Scrap<any>[]) {
     const sourcesWithDescendants = new Set<Scrap<any>>()
-    for (const scrap of sources) {
+    for (const scrap of scraps) {
       sourcesWithDescendants.add(scrap)
       for (const descendant of this.getDescendants(scrap)) {
         sourcesWithDescendants.add(descendant)
@@ -314,18 +186,113 @@ export class ScrapRepository
   }
 
   async pasteFromClipboard(...args: Scrap<any>[]) {
+    console.log(args)
     const clipboardContents = await env.clipboard.readText()
     Output.trace(`clipboard content: ${clipboardContents}`)
     const parsed = ScrapFactory.fromString(clipboardContents)
     if (parsed instanceof Array) {
-      for (const s of parsed) {
-        await this.addOrUpdate(s, args?.[0])
-      }
+      await this.add(args?.[0], parsed)
     } else {
-      await this.addOrUpdate(
+      await this.add(args?.[0], [
         ScrapFactory.fromString(clipboardContents) as Scrap<any>,
-        args?.[0],
+      ])
+    }
+  }
+
+  search(
+    query_: string,
+    kindFilters?: ScrapKind[],
+    sortingMethod?: ScrapSortingMethod,
+  ) {
+    const query = query_.toLowerCase()
+    const kinds = kindFilters ?? Object.keys(ScrapKindMeta)
+
+    const result = (this._items as ScrapLike[]).filter(
+      scrap =>
+        kinds.includes(scrap.kind) &&
+        (scrap.state.name?.toLowerCase().includes(query) ||
+          scrap.state.description?.toLowerCase().includes(query)),
+    )
+    if (sortingMethod) {
+      result.sort(ScrapSortingMethods[sortingMethod])
+    }
+    return result
+  }
+
+  private notifyAffected() {
+    if (this.affectedScraps.has(undefined)) {
+      Output.trace('Notifying affected root')
+      this.notifyDataChange(undefined)
+    } else {
+      const affected = [...this.affectedScraps.values()].filter(
+        s => s !== undefined,
       )
+      Output.trace(`Notifying affected: ${affected}`)
+      this.notifyDataChange(affected)
+    }
+    this.affectedScraps.clear()
+  }
+
+  private notifyDataChange(data: Scrap<any>[] | undefined) {
+    this._onDidChangeData.fire(data)
+  }
+
+  childrenOf(scrap: Scrap<any> | undefined) {
+    return this.items.filter(s => s.parent?.id === scrap?.id)
+  }
+
+  getScrapById(id: UUID) {
+    return this._items.find(s => s.id === id)
+  }
+
+  refresh() {
+    this.notifyDataChange(undefined)
+  }
+
+  private getScrapIndexById(id: UUID) {
+    return this._items.findIndex(s => s.id === id)
+  }
+
+  private detach(scrap: Scrap<any>) {
+    const idx = this.getScrapIndexById(scrap.id)
+    if (idx > -1) {
+      this._items.splice(idx, 1)
+      this.notifyDataChange(scrap.parent ? [scrap.parent] : undefined)
+      scrap.parent = undefined
+    }
+    return idx
+  }
+
+  async add(dst: Scrap<any> | undefined, src: Scrap<any>[]) {
+    for (const s of src) {
+      const existingIndex = this.getScrapIndexById(s.id)
+      if (existingIndex > -1) {
+        const oldS = this._items[existingIndex]
+
+        if (dst === s || dst?.isDescendantOf(s)) {
+          await window.showErrorMessage(
+            'Cannot move Scrap into its descendant or itself',
+          )
+          continue
+        }
+
+        if (dst === s.parent) {
+          this._items[existingIndex] = s
+          this.notifyDataChange(dst ? [dst] : undefined)
+          return
+        }
+
+        while (dst !== undefined && !dst.acceptsChildren) {
+          dst = dst?.parent
+        }
+
+        // Remove the old scrap to prevent TreeItem id duplication
+        this.detach(oldS)
+      }
+
+      s.parent = dst
+      this._items.push(s)
+      this.notifyDataChange(dst ? [dst] : undefined)
     }
   }
 }

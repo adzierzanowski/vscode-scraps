@@ -1,12 +1,10 @@
 import {
   commands,
   Disposable,
-  env,
   ExtensionContext,
   ExtensionMode,
+  extensions,
   MessageItem,
-  TreeItemCheckboxState,
-  TreeView,
   Uri,
   ViewColumn,
   window,
@@ -17,14 +15,19 @@ import {NoteScrap, Scrap, ScrapFactory, ScrapRepository} from './scraps'
 import {Output} from './extension'
 import {extensionId} from './utils'
 import {
-  showEditScrapPanel,
+  showSortingQuickPick,
   showKindQuickPick,
   showRenameInput,
+  showSearch,
 } from './UIHelpers'
+import {ScrapTree, showEditScrapPanel} from './ui'
+import {SearchView} from './ui/SearchView'
 
 export class ScrapExtension implements Disposable {
   private _context: ExtensionContext
   repository = new ScrapRepository()
+  tree: ScrapTree = new ScrapTree(this.repository)
+  search: SearchView = new SearchView(this.repository)
 
   constructor(context: ExtensionContext) {
     this._context = context
@@ -47,7 +50,17 @@ export class ScrapExtension implements Disposable {
       commands.registerCommand(extensionId('copy'), this.copy, this),
       commands.registerCommand(extensionId('paste'), this.paste, this),
       commands.registerCommand(extensionId('rename'), this.rename, this),
+      commands.registerCommand(
+        extensionId('setSortingMethod'),
+        this.setSortingMethod,
+        this,
+      ),
       commands.registerCommand(extensionId('showNote'), this.showNote, this),
+      commands.registerCommand(
+        extensionId('showSearch'),
+        this.showSearch,
+        this,
+      ),
       commands.registerCommand(
         extensionId('addCurrentLineAsScrap'),
         this.addCurrentLineAsScrap,
@@ -61,13 +74,19 @@ export class ScrapExtension implements Disposable {
       workspace.registerTextDocumentContentProvider('scrap', this.repository),
     )
 
-    this.repository.onDidChangeTreeData(
+    this.tree.onDidChangeTreeData(
       async () => {
         if (this.config.get<boolean>('saveOnChange')) {
           await this.save()
         }
       },
       this,
+      this._context.subscriptions,
+    )
+
+    this.search.onDidClickScrap(
+      scrap => this.tree.reveal(scrap),
+      this.tree,
       this._context.subscriptions,
     )
 
@@ -108,9 +127,9 @@ export class ScrapExtension implements Disposable {
   async edit(scrap: Scrap<any>) {
     Output.info(`Editing ${scrap}`)
     const result = await showEditScrapPanel(scrap)
-    Output.info(`Scrap edit result ${result}`)
+    Output.info(`Scrap edit result ${result?.toString()}`)
     if (result !== undefined) {
-      await this.repository.addOrUpdate(result)
+      await this.repository.add(scrap.parent, [result])
     }
   }
 
@@ -127,7 +146,7 @@ export class ScrapExtension implements Disposable {
       this._context.extensionMode === ExtensionMode.Development
         ? JSON.stringify(data, undefined, 2)
         : JSON.stringify(data)
-    Output.debug(content)
+    Output.trace(content)
     await workspace.fs.writeFile(path, te.encode(content))
   }
 
@@ -152,12 +171,14 @@ export class ScrapExtension implements Disposable {
   }
 
   async copy(...args: Scrap<any>[]) {
-    Output.info(`copy: ${args}`)
-    await this.repository.copyToClipboard(...args.filter(x => x !== undefined))
+    const scrapsToCopy = args.filter(x => x !== undefined)
+
+    await this.repository.copyToClipboard(
+      scrapsToCopy.length > 0 ? scrapsToCopy : this.tree.selection,
+    )
   }
 
   async paste(...args: Scrap<any>[]) {
-    Output.info(`paste: ${args}`)
     await this.repository.pasteFromClipboard(
       ...args.filter(x => x !== undefined),
     )
@@ -169,14 +190,24 @@ export class ScrapExtension implements Disposable {
       return
     }
 
-    scrap.state.name = name
-    await this.repository.addOrUpdate(scrap)
+    await this.repository.rename(scrap, name)
   }
 
-  async remove(...scraps: Scrap<any>[]) {
-    const scrapsToRemove = scraps
-      .filter(s => s !== undefined)
-      .flatMap(s => [s, ...this.repository.getDescendants(s)])
+  async remove(...scraps_: Scrap<any>[]) {
+    const scraps = scraps_.filter(x => x !== undefined)
+    const parentsToRemove =
+      scraps.length > 0
+        ? scraps
+        : this.tree.selection.length > 0
+        ? this.tree.selection
+        : []
+    if (parentsToRemove.length === 0) {
+      return
+    }
+    const scrapsToRemove = parentsToRemove.flatMap(s => [
+      s,
+      ...this.repository.getDescendants(s),
+    ])
     const confirmSetting = this.config.get<string>('confirmRemoval')
     const showConfirm =
       confirmSetting === 'always' ||
@@ -198,6 +229,11 @@ export class ScrapExtension implements Disposable {
     }
   }
 
+  async setSortingMethod() {
+    const choice = await showSortingQuickPick()
+    workspace.getConfiguration(extensionId()).update('sortingMethod', choice)
+  }
+
   async showNote(note: NoteScrap) {
     Output.info(`showing ${note}`)
     await commands.executeCommand(
@@ -212,7 +248,11 @@ export class ScrapExtension implements Disposable {
     if (uri !== undefined) {
       const fragment = `L${window.activeTextEditor?.selection.start.line}`
       uri = Uri.from({scheme: uri.scheme, path: uri.path, fragment})
-      this.repository.addOrUpdate(ScrapFactory.fromUri(uri))
+      this.repository.add(undefined, [ScrapFactory.fromUri(uri)])
     }
+  }
+
+  async showSearch() {
+    this.search.show()
   }
 }

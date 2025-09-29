@@ -1,9 +1,10 @@
 import {TreeItem} from 'vscode'
-import {Scrap, ScrapState} from '../Scrap'
+import {Scrap} from '../Scrap'
+import {ScrapStateBase} from '../types'
 
-export interface VSCommandScrapState extends ScrapState {
+export interface VSCommandScrapState extends ScrapStateBase {
   commandId: string
-  args?: string[]
+  args: any
 }
 
 export class VSCommandScrap extends Scrap<VSCommandScrapState> {
@@ -19,6 +20,13 @@ export class VSCommandScrap extends Scrap<VSCommandScrapState> {
         title: this.state.name ?? this.state.commandId,
         arguments: this.state.args,
       },
+    })
+  }
+
+  get qpItem() {
+    return this._qpItemWith({
+      label: this.state.name ?? this.state.commandId,
+      detail: this.state.commandId,
     })
   }
 }

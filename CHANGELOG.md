@@ -1,10 +1,14 @@
 # Change Log
 
-All notable changes to the "scraps" extension will be documented in this file.
+## 0.1.0
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how
-to structure this file.
+- Items keep track of the creation and modification dates
+- Items in the TreeView can be sorted
+- Groups can have custom icon colors assigned
+- Very basic search
+- Fixed some bugs in the handling of the TreeView data changes
+- Fixed the argument format in VSCommand scraps
 
-## [Unreleased]
+## 0.0.1
 
 - Initial release

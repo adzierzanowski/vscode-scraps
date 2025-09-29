@@ -1,8 +1,9 @@
-import {TreeItem} from 'vscode'
-import {Scrap, ScrapState} from '../Scrap'
+import {QuickPickItem, TreeItem} from 'vscode'
 import {extensionId} from '../../utils'
+import {Scrap} from '../Scrap'
+import {ScrapStateBase} from '../types'
 
-export interface ShellScrapState extends ScrapState {
+export interface ShellScrapState extends ScrapStateBase {
   command: string
 }
 
@@ -16,6 +17,13 @@ export class ShellScrap extends Scrap<ShellScrapState> {
         title: 'Run Shell Command',
         arguments: [this.state.command],
       },
+    })
+  }
+
+  get qpItem() {
+    return this._qpItemWith({
+      label: this.state.name ?? this.state.command,
+      detail: this.state.command,
     })
   }
 }
